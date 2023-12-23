@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import xml.etree.ElementTree as et
+import os.path
 
 def func(x):
    return(a*(y-b*x**2+c*x-r)**2+s*(1-t)*np.cos(x)+s)
@@ -19,7 +20,7 @@ y = 2.275
 
 y_points = []
 x_points = []
-for x in np.arange(x_min, x_max, 0.005):
+for x in np.arange(x_min, x_max, 0.05):
     f = func(x)
     y_points.append(f)
     x_points.append(x)
@@ -35,8 +36,11 @@ plt.plot(x_points, y_points)
 plt.show()
 
 #Сохранение XML.
+if(os.path.exists('results') == False):
+    os.mkdir('results')
+
 data = et.Element('data')
-for i in range(len(y_points)):
+for i in range(len(x_points)):
     item_row = et.SubElement(data, 'row')
     item_x = et.SubElement(item_row, 'x')
     item_y = et.SubElement(item_row, 'y')
@@ -45,5 +49,4 @@ for i in range(len(y_points)):
 
 ffile = et.ElementTree(data)
 et.indent(ffile, space="\t", level=0)
-ffile.write("results_1.xml", encoding="utf-8", xml_declaration=True)
-
+ffile.write("results/results_1.xml", encoding="utf-8", xml_declaration=True)
