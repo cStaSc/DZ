@@ -87,6 +87,7 @@ for i in range(count):
     lam.append(c/flist[i])
 
 #Запись в необходимом формате
+flist = flist.tolist()
 with open('results/results_2.json', 'w') as f:
     f.write(f"{{\n    \"freq\": {flist},\n    \"lambda\": {lam},\n    \"rcs\": {epr}\n}}")
 
