@@ -2,14 +2,14 @@
 '''
 Моделирование отражения гармонического сигнала от слоя диэлектрика
 '''
-
 import math
 import numpy as np
 import numpy.typing as npt
-from typing import Optional
+from typing import Optional, List
 from abc import ABCMeta, abstractmethod
 import pylab
 from numpy.fft import fft, fftshift
+import matplotlib.pyplot as plt
 
 class LayerContinuous:
     def __init__(self,
@@ -282,48 +282,30 @@ class AnimateFieldDisplay:
         self._fig.canvas.flush_events()
 
 
-def showProbeSignals(probes: list[Probe],
-                     dx: float, dt: float, minYSize: float, maxYSize: float):
+def showProbeSignalsOne(probes: List[Probe], minYSize: float, maxYSize: float):
     '''
     Показать графики сигналов, зарегистрированых в датчиках.
 
     probes - список экземпляров класса Probe.
-    dx - дискрет по пространству, м
-    dt - дискрет по времени, с
     minYSize, maxYSize - интервал отображения графика по оси Y.
     '''
     # Создание окна с графиков
-    fig, axes_list = pylab.subplots(nrows=len(probes),
-                                    figsize=(10, 6.5),
-                                    tight_layout={'w_pad': 0.7, 'h_pad': 0.7})
-    fig.suptitle('Сигналы в датчиках')
+    fig, ax = plt.subplots()
 
-    # legends = []
+    # Настройка внешнего вида графиков
+    ax.set_xlim(0, len(probes[0].E) * dt * 1e9)
+    ax.set_ylim(minYSize, maxYSize)
+    ax.set_xlabel('t, нс')
+    ax.set_ylabel('Ez, В/м')
+    ax.grid()
+    time_list = np.arange(len(probes[0].E)) * dt * 1e9
     # Вывод сигналов в окно
-    Elist = []
-    for n, (probe, ax) in enumerate(zip(probes, axes_list)):
-        # Настройка внешнего вида графиков
-        ax.set_xlim(0, len(probes[0].E) * dt * 1e9)
-        ax.set_ylim(minYSize, maxYSize)
-        ax.set_xlabel('t, нс')
-        ax.set_ylabel('Ez, В/м')
-        ax.grid()
-
-        time_list = np.arange(len(probe.E)) * dt * 1e9
-        maxval = np.max(probe.E)
-        Elist.append(maxval)
-        minval = np.min(probe.E)
-        legend = 'Датчик {n}: x = {pos:.5f}; Max = {maxval:.5f}; Min = {minval:.5f}'.format(
-            n=n + 1, pos=probe.position * dx, maxval=maxval, minval=minval)
-        # legends.append(legend)
+    for probe in probes:
         ax.plot(time_list, probe.E)
 
-        # Создание и отображение легенды на графике
-        legend_obj = ax.legend([legend])
-        legend_obj.set_draggable(True)
-
     # Показать окно с графиками
-    pylab.show()
+    plt.show()
+
 
 
 def showProbeSignalsCFFT(probes: list[Probe],
@@ -405,7 +387,7 @@ if __name__ == '__main__':
 
     # Параметры моделирования
     # Частота сигнала, Гц
-    f_Hz = 0.5e9
+    f_Hz = 0.4e9
 
     # Дискрет по пространству в м
     dx = 2e-3
@@ -429,11 +411,11 @@ if __name__ == '__main__':
     # Координаты датчиков для регистрации поля в м
     probesPos_m = [2, 7]
 
-    # Параметры слоев//////////////////////////////////////
+    # Параметры слоев
     layers_cont = [LayerContinuous(0, eps=2.2, sigma=0.0)]
 
     # Скорость обновления графика поля
-    speed_refresh = 90
+    speed_refresh = 100
 
     # Переход к дискретным отсчетам
     # Дискрет по времени
@@ -494,7 +476,7 @@ if __name__ == '__main__':
     loss = np.zeros(maxSize)
     
     layer_loss = 100 #координата начала потерь
-    loss[:layer_loss] = 0.005 #начало поглащающего слоя слево
+    loss[:layer_loss] = 0.02 #начало поглащающего слоя слево
     ceze = (1.0 - loss) / (1.0 + loss) #массив
     cezh = W0 / (eps * (1.0 + loss)) #массим
     print(len(loss))
@@ -510,23 +492,9 @@ if __name__ == '__main__':
     print(chyh)
     print(chye)
     
-
     # Источник
-    #magnitude = 10.0
-    #A_max = 100
-    #F_max = 0.5e9
-    #w_g = np.sqrt(np.log(5.5 * A_max)) / (np.pi * F_max)
-    #d_g = w_g * np.sqrt(np.log(2.5 * A_max * np.sqrt(np.log(2.5 * A_max))))
-    magnitude = 10.0
-    A_max = 100
-    F_max = 0.5e9
-    w_g = np.sqrt(np.log(5.5 * A_max)) / (np.pi * F_max)
-    d_g = w_g * np.sqrt(np.log(2.5 * A_max * np.sqrt(np.log(2.5 * A_max))))
-
-    signal = GaussianModPlaneWave(500, 500, 300, 1)
-    ##signal = Gaussian(magnitude, d_g, w_g, dt)
+    signal = GaussianModPlaneWave(2600, 1300, Nl, Sc)
     source = SourceTFSF(signal, 0.0, Sc, eps[sourcePos], mu[sourcePos])
-    # source = sources.Harmonic.make_continuous(magnitude, f_Hz, dt, Sc)
 
     Ez = np.zeros(maxSize)
     Hy = np.zeros(maxSize - 1)
@@ -555,7 +523,7 @@ if __name__ == '__main__':
 
     for t in range(1, maxTime):
         
-       # Ez[1] в предыдущий момент времени
+        # Ez[1] в предыдущий момент времени
         oldEzLeft = Ez[1]
 
         # Ez[-2] в предыдущий момент времени
@@ -568,21 +536,15 @@ if __name__ == '__main__':
         tempRight = Sc / np.sqrt(mu[-1] * eps[-1])
         koeffABCRight = (tempRight - 1) / (tempRight + 1)
 
-
-        # Расчет компоненты поля H
-        Hy = Hy + (Ez[1:] - Ez[:-1]) * Sc / (W0 * mu)
-        
-        #####Hy = chyh[:-1] * Hy + chye[:-1] * (Ez[1:] - Ez[:-1])
-        ####Hy[-1] = Hy[-2]
+        # Расчет компоненты поля H        
+        Hy = chyh[:-1] * Hy + chye[:-1] * (Ez[1:] - Ez[:-1])
 
         # Источник возбуждения с использованием метода
         # Total Field / Scattered Field
         Hy[sourcePos - 1] += source.getH(t)
-        ####Hy[-1] = Hy[-2]#граничные условия
 
         # Расчет компоненты поля E
         Ez[1:-1] = ceze[1: -1] * Ez[1: -1] + cezh[1: -1] * (Hy[1:] - Hy[: -1])
-        ###Ez[0] = Ez[1]
 
         # Источник возбуждения с использованием метода
         # Total Field / Scattered Field
@@ -591,8 +553,6 @@ if __name__ == '__main__':
         #Граничные условия ABC для правой границы 
         Ez[-1] = oldEzRight + koeffABCRight * (Ez[-2] - Ez[-1])
         oldEzRight = Ez[-2]
-
-
 
         # Регистрация поля в датчиках
         for probe in probes:
@@ -604,5 +564,18 @@ if __name__ == '__main__':
     display.stop()
 
     # Отображение сигнала, сохраненного в пробнике
-    showProbeSignals(probes, dx, dt, -2.1, 2.1)
-    showProbeSignalsCFFT(probes, dx, dt, -2.1, 2.1)
+    showProbeSignalsOne(probes, -2.1, 2.1)
+    # Построение спектра
+    plt.figure()
+    #t = np.arange(500)
+    sp = np.fft.fft(probes[0].E)
+    freq = np.fft.fftfreq(maxTime)
+    for i in range(len(freq)):
+        if freq[i] < 0:
+            sp[i] = 0
+    plt.plot(freq / (dt * 1e9), abs(sp) / max(abs(sp)))
+    plt.xlim(0, 0.9)
+    plt.grid()
+    plt.xlabel('f, ГГц')
+    display.stop()
+    plt.show()
