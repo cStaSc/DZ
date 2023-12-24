@@ -92,7 +92,7 @@ with open('results/results_2.json', 'w') as f:
     f.write(f"{{\n    \"freq\": {flist},\n    \"lambda\": {lam},\n    \"rcs\": {epr}\n}}")
 
 plt.grid()
-plt.xlabel('x', fontsize=14)
-plt.ylabel('y',rotation=0, fontsize=14, labelpad=10) 
+plt.xlabel('f, ГГц', fontsize=14)
+plt.ylabel('RCS',rotation=0, fontsize=14, labelpad=10) 
 plt.plot(flist, epr)
 plt.show()
