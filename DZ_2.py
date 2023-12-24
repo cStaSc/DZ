@@ -93,6 +93,6 @@ with open('results/results_2.json', 'w') as f:
 
 plt.grid()
 plt.xlabel('f, ГГц', fontsize=14)
-plt.ylabel('RCS',rotation=0, fontsize=14, labelpad=10) 
+plt.ylabel('ЭПР, м^2',rotation=0, fontsize=14, labelpad=10) 
 plt.plot(flist, epr)
 plt.show()
