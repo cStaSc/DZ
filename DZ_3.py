@@ -411,7 +411,7 @@ if __name__ == '__main__':
     # Координаты датчиков для регистрации поля в м
     probesPos_m = [2, 7]
 
-    # Параметры слоев
+    # Параметры слоев//////////////////////////////////////
     layers_cont = [LayerContinuous(0, eps=2.2, sigma=0.0)]
 
     # Скорость обновления графика поля
@@ -491,13 +491,20 @@ if __name__ == '__main__':
     print(cezh)
     print(chyh)
     print(chye)
-    
+
+    # Расчет коэффициентов для граничных условий
+    tempRight = Sc / np.sqrt(mu[-1] * eps[-1])
+    koeffABCRight = (tempRight - 1) / (tempRight + 1)    
+
     # Источник
     signal = GaussianModPlaneWave(2600, 1300, Nl, Sc)
+    ##signal = Gaussian(magnitude, d_g, w_g, dt)
     source = SourceTFSF(signal, 0.0, Sc, eps[sourcePos], mu[sourcePos])
 
     Ez = np.zeros(maxSize)
     Hy = np.zeros(maxSize - 1)
+    # Ez[-2] в предыдущий момент времени для ABC
+    oldEzRight = Ez[-2]
 
     # Параметры отображения поля E
     display_field = Ez
@@ -522,21 +529,8 @@ if __name__ == '__main__':
             display.drawBoundary(layer.xmax)
 
     for t in range(1, maxTime):
-        
-        # Ez[1] в предыдущий момент времени
-        oldEzLeft = Ez[1]
-
-        # Ez[-2] в предыдущий момент времени
-        oldEzRight = Ez[-2]
-
-        # Расчет коэффициентов для граничных условий
-        tempLeft = Sc / np.sqrt(mu[0] * eps[0])
-        koeffABCLeft = (tempLeft - 1) / (tempLeft + 1)
-
-        tempRight = Sc / np.sqrt(mu[-1] * eps[-1])
-        koeffABCRight = (tempRight - 1) / (tempRight + 1)
-
-        # Расчет компоненты поля H        
+    
+        # Расчет компоненты поля H
         Hy = chyh[:-1] * Hy + chye[:-1] * (Ez[1:] - Ez[:-1])
 
         # Источник возбуждения с использованием метода
